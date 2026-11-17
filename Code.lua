@@ -1,7 +1,7 @@
 --[[
     Универсальное меню для Roblox (Solara-совместимое)
     Разделы: Игрок / Настройка меню
-    Функции: Fly (по клавишам, поворот за камерой), Noclip, FastInteract, Player ESP
+    Функции: Fly (по клавишам, поворот за камерой), Noclip, FastInteract, Player ESP, Speed Slider
     Островок двигается мышью, по клику открывает меню, не пропадает.
     Окно можно двигать (за заголовок) и ресайзить (за правый нижний угол).
 ]]
@@ -145,7 +145,6 @@ CloseCorner.Parent = CloseBtn
 
 CloseBtn.MouseButton1Click:Connect(function()
     Main.Visible = false
-    -- островок остаётся видимым
 end)
 
 -- ============ ЛЕВОЕ МЕНЮ (вкладки) ============
@@ -309,6 +308,129 @@ local function makeButton(parent, text, order, callback)
     return btn
 end
 
+local function makeSlider(parent, text, order, minVal, maxVal, default, callback)
+    local row = Instance.new("Frame")
+    row.Size = UDim2.new(1, 0, 0, 54)
+    row.BackgroundColor3 = COL_PANEL
+    row.BorderSizePixel = 0
+    row.LayoutOrder = order
+    row.ZIndex = 42
+    row.Parent = parent
+    local rc = Instance.new("UICorner")
+    rc.CornerRadius = UDim.new(0, 8)
+    rc.Parent = row
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, -70, 0, 20)
+    label.Position = UDim2.new(0, 12, 0, 6)
+    label.BackgroundTransparency = 1
+    label.Text = text
+    label.TextColor3 = COL_TEXT
+    label.TextSize = 13
+    label.Font = Enum.Font.GothamMedium
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.ZIndex = 43
+    label.Parent = row
+
+    local valueLabel = Instance.new("TextLabel")
+    valueLabel.Size = UDim2.new(0, 50, 0, 20)
+    valueLabel.Position = UDim2.new(1, -62, 0, 6)
+    valueLabel.BackgroundTransparency = 1
+    valueLabel.Text = tostring(default)
+    valueLabel.TextColor3 = COL_ACCENT
+    valueLabel.TextSize = 13
+    valueLabel.Font = Enum.Font.GothamBold
+    valueLabel.TextXAlignment = Enum.TextXAlignment.Right
+    valueLabel.ZIndex = 43
+    valueLabel.Parent = row
+
+    local barBg = Instance.new("Frame")
+    barBg.Size = UDim2.new(1, -24, 0, 6)
+    barBg.Position = UDim2.new(0, 12, 0, 34)
+    barBg.BackgroundColor3 = COL_OFF
+    barBg.BorderSizePixel = 0
+    barBg.ZIndex = 43
+    barBg.Parent = row
+    local barBgCorner = Instance.new("UICorner")
+    barBgCorner.CornerRadius = UDim.new(1, 0)
+    barBgCorner.Parent = barBg
+
+    local fill = Instance.new("Frame")
+    fill.Size = UDim2.new((default - minVal) / (maxVal - minVal), 0, 1, 0)
+    fill.BackgroundColor3 = COL_ACCENT
+    fill.BorderSizePixel = 0
+    fill.ZIndex = 44
+    fill.Parent = barBg
+    local fillCorner = Instance.new("UICorner")
+    fillCorner.CornerRadius = UDim.new(1, 0)
+    fillCorner.Parent = fill
+
+    local knob = Instance.new("Frame")
+    knob.Size = UDim2.new(0, 14, 0, 14)
+    knob.Position = UDim2.new((default - minVal) / (maxVal - minVal), -7, 0.5, -7)
+    knob.BackgroundColor3 = Color3.new(1, 1, 1)
+    knob.BorderSizePixel = 0
+    knob.ZIndex = 45
+    knob.Parent = barBg
+    local knobCorner = Instance.new("UICorner")
+    knobCorner.CornerRadius = UDim.new(1, 0)
+    knobCorner.Parent = knob
+
+    local value = default
+    local dragging = false
+
+    local function updateFromX(mouseX)
+        local absPos = barBg.AbsolutePosition.X
+        local absSize = barBg.AbsoluteSize.X
+        if absSize <= 0 then return end
+        local rel = math.clamp((mouseX - absPos) / absSize, 0, 1)
+        value = math.floor(minVal + rel * (maxVal - minVal) + 0.5)
+        local relPos = (value - minVal) / (maxVal - minVal)
+        fill.Size = UDim2.new(relPos, 0, 1, 0)
+        knob.Position = UDim2.new(relPos, -7, 0.5, -7)
+        valueLabel.Text = tostring(value)
+        if callback then
+            local ok, err = pcall(callback, value)
+            if not ok then warn("[Slider] " .. tostring(err)) end
+        end
+    end
+
+    barBg.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            updateFromX(input.Position.X)
+        end
+    end)
+
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement
+        or input.UserInputType == Enum.UserInputType.Touch) then
+            updateFromX(input.Position.X)
+        end
+    end)
+
+    return function(v)
+        v = math.clamp(v, minVal, maxVal)
+        value = v
+        local relPos = (value - minVal) / (maxVal - minVal)
+        fill.Size = UDim2.new(relPos, 0, 1, 0)
+        knob.Position = UDim2.new(relPos, -7, 0.5, -7)
+        valueLabel.Text = tostring(value)
+        if callback then
+            local ok, err = pcall(callback, value)
+            if not ok then warn("[Slider] " .. tostring(err)) end
+        end
+    end
+end
+
 -- ============ ВКЛАДКИ ============
 local Pages = {}
 local TabButtons = {}
@@ -348,6 +470,7 @@ local flyAlignOrientation = nil
 local flyAttachment = nil
 local FLY_SPEED = 60
 local FLY_VERTICAL = 40
+_G.__FlySpeed = 60  -- текущая скорость (меняется слайдером)
 
 local function stopFly()
     if flyConnection then flyConnection:Disconnect() flyConnection = nil end
@@ -375,14 +498,12 @@ local function startFly()
     hum.PlatformStand = true
     hum.AutoRotate = false
 
-    -- Движение
     flyBodyVelocity = Instance.new("BodyVelocity")
     flyBodyVelocity.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
     flyBodyVelocity.Velocity = Vector3.zero
     flyBodyVelocity.P = 10000
     flyBodyVelocity.Parent = hrp
 
-    -- Ориентация: персонаж смотрит туда же, куда камера
     flyAttachment = Instance.new("Attachment")
     flyAttachment.Parent = hrp
 
@@ -406,17 +527,14 @@ local function startFly()
         local flatRight = Vector3.new(right.X, 0, right.Z)
         if flatRight.Magnitude > 0.001 then flatRight = flatRight.Unit end
 
-        -- Ориентация: HRP смотрит в ту же сторону, что камера
         flyAlignOrientation.CFrame = CFrame.new(root.Position, root.Position + look)
 
-        -- Движение только по нажатым клавишам
         local move = Vector3.zero
         if UserInputService:IsKeyDown(Enum.KeyCode.W) then move = move + look end
         if UserInputService:IsKeyDown(Enum.KeyCode.S) then move = move - look end
         if UserInputService:IsKeyDown(Enum.KeyCode.D) then move = move + flatRight end
         if UserInputService:IsKeyDown(Enum.KeyCode.A) then move = move - flatRight end
 
-        -- Вертикаль
         local vertical = 0
         if UserInputService:IsKeyDown(Enum.KeyCode.Space) then vertical = vertical + 1 end
         if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift)
@@ -424,7 +542,8 @@ local function startFly()
 
         local velocity = Vector3.zero
         if move.Magnitude > 0 then
-            velocity = move.Unit * FLY_SPEED
+            local fs = _G.__FlySpeed or FLY_SPEED
+            velocity = move.Unit * fs
         end
         velocity = velocity + Vector3.new(0, vertical * FLY_VERTICAL, 0)
 
@@ -587,7 +706,17 @@ makeToggle(PagePlayer, "ESP игроков", 4, false, function(v)
     setESP(v)
 end)
 
-makeButton(PagePlayer, "Сбросить персонажа", 5, function()
+-- Слайдер скорости (0–150)
+local speedSet = makeSlider(PagePlayer, "Скорость игрока", 5, 0, 150, 16, function(v)
+    local char = LocalPlayer.Character
+    if char then
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if hum then hum.WalkSpeed = v end
+    end
+    _G.__FlySpeed = v
+end)
+
+makeButton(PagePlayer, "Сбросить персонажа", 6, function()
     local char = LocalPlayer.Character
     if char then
         local h = char:FindFirstChildOfClass("Humanoid")
@@ -677,59 +806,4 @@ UserInputService.InputChanged:Connect(function(input)
     if islandDragging and (input.UserInputType == Enum.UserInputType.MouseMovement
     or input.UserInputType == Enum.UserInputType.Touch) then
         local delta = input.Position - islandDragStart
-        if math.abs(delta.X) > 5 or math.abs(delta.Y) > 5 then
-            islandMoved = true
-        end
-        if islandMoved then
-            Island.Position = UDim2.new(
-                islandStartPos.X.Scale, islandStartPos.X.Offset + delta.X,
-                islandStartPos.Y.Scale, islandStartPos.Y.Offset + delta.Y
-            )
-        end
-    end
-end)
-
--- ============ ЛОГИКА РЕСАЙЗА ОКНА ============
-local resizing = false
-local resizeStart = nil
-local resizeStartSize = nil
-
-local MIN_W, MIN_H = 380, 240
-local MAX_W, MAX_H = 1000, 700
-
-ResizeHandle.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1
-    or input.UserInputType == Enum.UserInputType.Touch then
-        resizing = true
-        resizeStart = input.Position
-        resizeStartSize = Main.AbsoluteSize
-    end
-end)
-
-UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1
-    or input.UserInputType == Enum.UserInputType.Touch then
-        resizing = false
-    end
-end)
-
-UserInputService.InputChanged:Connect(function(input)
-    if resizing and (input.UserInputType == Enum.UserInputType.MouseMovement
-    or input.UserInputType == Enum.UserInputType.Touch) then
-        local delta = input.Position - resizeStart
-        local newW = math.clamp(resizeStartSize.X + delta.X, MIN_W, MAX_W)
-        local newH = math.clamp(resizeStartSize.Y + delta.Y, MIN_H, MAX_H)
-        Main.Size = UDim2.new(0, newW, 0, newH)
-    end
-end)
-
--- ============ СТАРТОВОЕ СОСТОЯНИЕ ============
-Pages["Игрок"].Visible = true
-TabButtons["Игрок"].TextColor3 = COL_ACCENT
-TabButtons["Игрок"].BackgroundColor3 = COL_BG
-
--- ============ ОЧИСТКА ПРИ РЕСПАВНЕ ============
-LocalPlayer.CharacterAdded:Connect(function()
-    stopFly()
-    if flySet then flySet(false) end
-end)
+        if math.abs(d
