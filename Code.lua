@@ -832,4 +832,74 @@ end)
 UserInputService.InputChanged:Connect(function(input)
     if islandDragging and (input.UserInputType == Enum.UserInputType.MouseMovement
     or input.UserInputType == Enum.UserInputType.Touch) then
-        local delta =
+        local delta = input.Position - islandDragStart
+        if math.abs(delta.X) > 5 or math.abs(delta.Y) > 5 then
+            islandMoved = true
+        end
+        if islandMoved then
+            Island.Position = UDim2.new(
+                islandStartPos.X.Scale, islandStartPos.X.Offset + delta.X,
+                islandStartPos.Y.Scale, islandStartPos.Y.Offset + delta.Y
+            )
+        end
+    end
+end)
+
+-- ============ РЕСАЙЗ ============
+local resizing = false
+local resizeStart = nil
+local resizeStartSize = nil
+local MIN_W, MIN_H = 380, 240
+local MAX_W, MAX_H = 1000, 700
+
+ResizeHandle.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1
+    or input.UserInputType == Enum.UserInputType.Touch then
+        resizing = true
+        resizeStart = input.Position
+        resizeStartSize = Main.AbsoluteSize
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1
+    or input.UserInputType == Enum.UserInputType.Touch then
+        resizing = false
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if resizing and (input.UserInputType == Enum.UserInputType.MouseMovement
+    or input.UserInputType == Enum.UserInputType.Touch) then
+        local delta = input.Position - resizeStart
+        local newW = math.clamp(resizeStartSize.X + delta.X, MIN_W, MAX_W)
+        local newH = math.clamp(resizeStartSize.Y + delta.Y, MIN_H, MAX_H)
+        Main.Size = UDim2.new(0, newW, 0, newH)
+    end
+end)
+
+Pages["Игрок"].Visible = true
+TabButtons["Игрок"].TextColor3 = COL_ACCENT
+TabButtons["Игрок"].BackgroundColor3 = COL_BG
+
+LocalPlayer.CharacterAdded:Connect(function(char)
+    stopFly()
+    if flySet then flySet(false) end
+    if godmodeConnection then
+        godmodeConnection:Disconnect()
+        godmodeConnection = nil
+    end
+    local hum = char:WaitForChild("Humanoid", 5)
+    if hum then
+        if _G.__FlySpeed then
+            hum.WalkSpeed = _G.__FlySpeed
+        end
+        if _G.__JumpPower then
+            if hum.UseJumpPower then
+                hum.JumpPower = _G.__JumpPower
+            else
+                hum.JumpHeight = _G.__JumpPower * 0.2
+            end
+        end
+    end
+end)
