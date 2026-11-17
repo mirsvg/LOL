@@ -2,6 +2,7 @@
     Универсальное меню для Roblox (Solara-совместимое)
     Разделы: Игрок / Настройка меню
     Функции: Fly, Noclip, FastInteract, Player ESP, Godmode, Speed Slider, Jump Slider
+    Колесо мыши: слайдеры + скролл контента
 ]]
 
 if _G.__MyMenuLoaded and _G.__MyMenu then
@@ -160,11 +161,13 @@ Content.Position = UDim2.new(0, 130, 0, 38)
 Content.BackgroundColor3 = COL_BG
 Content.BorderSizePixel = 0
 Content.ZIndex = 41
-Content.ScrollBarThickness = 4
+Content.ScrollBarThickness = 6
 Content.ScrollBarImageColor3 = COL_SUB
 Content.CanvasSize = UDim2.new(0, 0, 0, 0)
 Content.AutomaticCanvasSize = Enum.AutomaticSize.Y
 Content.ScrollingDirection = Enum.ScrollingDirection.Y
+Content.ScrollingEnabled = true
+Content.ElasticBehavior = Enum.ElasticBehavior.WhenScrollable
 Content.Parent = Main
 
 local ContentLayout = Instance.new("UIListLayout")
@@ -363,21 +366,28 @@ local function makeSlider(parent, text, order, minVal, maxVal, default, callback
 
     local value = default
     local dragging = false
+    local hovered = false
+
+    local function setValue(v, fireCallback)
+        v = math.clamp(math.floor(v + 0.5), minVal, maxVal)
+        if v == value and not fireCallback then return end
+        value = v
+        local relPos = (value - minVal) / (maxVal - minVal)
+        fill.Size = UDim2.new(relPos, 0, 1, 0)
+        knob.Position = UDim2.new(relPos, -7, 0.5, -7)
+        valueLabel.Text = tostring(value)
+        if fireCallback and callback then
+            local ok, err = pcall(callback, value)
+            if not ok then warn("[Slider] " .. tostring(err)) end
+        end
+    end
 
     local function updateFromX(mouseX)
         local absPos = barBg.AbsolutePosition.X
         local absSize = barBg.AbsoluteSize.X
         if absSize <= 0 then return end
         local rel = math.clamp((mouseX - absPos) / absSize, 0, 1)
-        value = math.floor(minVal + rel * (maxVal - minVal) + 0.5)
-        local relPos = (value - minVal) / (maxVal - minVal)
-        fill.Size = UDim2.new(relPos, 0, 1, 0)
-        knob.Position = UDim2.new(relPos, -7, 0.5, -7)
-        valueLabel.Text = tostring(value)
-        if callback then
-            local ok, err = pcall(callback, value)
-            if not ok then warn("[Slider] " .. tostring(err)) end
-        end
+        setValue(minVal + rel * (maxVal - minVal), true)
     end
 
     barBg.InputBegan:Connect(function(input)
@@ -386,6 +396,13 @@ local function makeSlider(parent, text, order, minVal, maxVal, default, callback
             dragging = true
             updateFromX(input.Position.X)
         end
+    end)
+
+    row.MouseEnter:Connect(function()
+        hovered = true
+    end)
+    row.MouseLeave:Connect(function()
+        hovered = false
     end)
 
     UserInputService.InputEnded:Connect(function(input)
@@ -402,17 +419,19 @@ local function makeSlider(parent, text, order, minVal, maxVal, default, callback
         end
     end)
 
-    return function(v)
-        v = math.clamp(v, minVal, maxVal)
-        value = v
-        local relPos = (value - minVal) / (maxVal - minVal)
-        fill.Size = UDim2.new(relPos, 0, 1, 0)
-        knob.Position = UDim2.new(relPos, -7, 0.5, -7)
-        valueLabel.Text = tostring(value)
-        if callback then
-            local ok, err = pcall(callback, value)
-            if not ok then warn("[Slider] " .. tostring(err)) end
+    UserInputService.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseWheel and hovered then
+            local step = 1
+            if input.Position.Z > 0 then
+                setValue(value + step, true)
+            else
+                setValue(value - step, true)
+            end
         end
+    end)
+
+    return function(v)
+        setValue(v, true)
     end
 end
 
@@ -875,6 +894,24 @@ UserInputService.InputChanged:Connect(function(input)
         local newW = math.clamp(resizeStartSize.X + delta.X, MIN_W, MAX_W)
         local newH = math.clamp(resizeStartSize.Y + delta.Y, MIN_H, MAX_H)
         Main.Size = UDim2.new(0, newW, 0, newH)
+    end
+end)
+
+-- ============ СКРОЛЛ КОЛЁСИКОМ (контент) ============
+local scrollSpeed = 40
+UserInputService.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseWheel then
+        local mousePos = UserInputService:GetMouseLocation()
+        local cPos = Content.AbsolutePosition
+        local cSize = Content.AbsoluteSize
+        if mousePos.X >= cPos.X and mousePos.X <= cPos.X + cSize.X
+        and mousePos.Y >= cPos.Y and mousePos.Y <= cPos.Y + cSize.Y then
+            local currentY = Content.CanvasPosition.Y
+            local maxY = math.max(0, Content.AbsoluteCanvasSize.Y - Content.AbsoluteSize.Y)
+            local delta = input.Position.Z > 0 and -scrollSpeed or scrollSpeed
+            local newY = math.clamp(currentY + delta, 0, maxY)
+            Content.CanvasPosition = Vector2.new(0, newY)
+        end
     end
 end)
 
