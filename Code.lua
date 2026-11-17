@@ -1,18 +1,14 @@
 --[[
     Универсальное меню для Roblox (Solara-совместимое)
     Разделы: Игрок / Настройка меню
-    Функции: Fly (по клавишам, поворот за камерой), Noclip, FastInteract, Player ESP, Speed Slider
-    Островок двигается мышью, по клику открывает меню, не пропадает.
-    Окно можно двигать (за заголовок) и ресайзить (за правый нижний угол).
+    Функции: Fly, Noclip, FastInteract, Player ESP, Speed Slider
 ]]
 
--- ============ ЗАЩИТА ОТ ДВОЙНОГО ЗАПУСКА ============
 if _G.__MyMenuLoaded and _G.__MyMenu then
     pcall(function() _G.__MyMenu:Destroy() end)
 end
 _G.__MyMenuLoaded = true
 
--- ============ СЕРВИСЫ ============
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -22,7 +18,6 @@ local CoreGui = game:GetService("CoreGui")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
--- ============ ЦВЕТА / СТИЛЬ ============
 local COL_BG      = Color3.fromRGB(18, 18, 22)
 local COL_PANEL   = Color3.fromRGB(28, 28, 34)
 local COL_ACCENT  = Color3.fromRGB(0, 170, 255)
@@ -31,21 +26,17 @@ local COL_SUB     = Color3.fromRGB(150, 150, 160)
 local COL_OFF     = Color3.fromRGB(60, 60, 70)
 local COL_ON      = Color3.fromRGB(0, 200, 120)
 
--- ============ GUI ============
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "MyUniversalMenu"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.IgnoreGuiInset = true
-pcall(function()
-    ScreenGui.Parent = CoreGui
-end)
+pcall(function() ScreenGui.Parent = CoreGui end)
 if not ScreenGui.Parent then
     ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 end
 _G.__MyMenu = ScreenGui
 
--- ============ ОСТРОВОК (кнопка открытия) ============
 local Island = Instance.new("TextButton")
 Island.Name = "Island"
 Island.Size = UDim2.new(0, 54, 0, 54)
@@ -70,7 +61,6 @@ IslandStroke.Color = Color3.fromRGB(0, 120, 200)
 IslandStroke.Thickness = 1.5
 IslandStroke.Parent = Island
 
--- ============ ГЛАВНОЕ ОКНО ============
 local Main = Instance.new("Frame")
 Main.Name = "Main"
 Main.Size = UDim2.new(0, 520, 0, 340)
@@ -91,7 +81,6 @@ MainStroke.Color = Color3.fromRGB(50, 50, 60)
 MainStroke.Thickness = 1
 MainStroke.Parent = Main
 
--- ============ РЕСАЙЗ ОКНА ============
 local ResizeHandle = Instance.new("TextButton")
 ResizeHandle.Name = "ResizeHandle"
 ResizeHandle.Size = UDim2.new(0, 18, 0, 18)
@@ -105,7 +94,6 @@ ResizeHandle.AutoButtonColor = false
 ResizeHandle.ZIndex = 45
 ResizeHandle.Parent = Main
 
--- ============ ЗАГОЛОВОК ============
 local TitleBar = Instance.new("Frame")
 TitleBar.Name = "TitleBar"
 TitleBar.Size = UDim2.new(1, 0, 0, 38)
@@ -147,7 +135,6 @@ CloseBtn.MouseButton1Click:Connect(function()
     Main.Visible = false
 end)
 
--- ============ ЛЕВОЕ МЕНЮ (вкладки) ============
 local TabBar = Instance.new("Frame")
 TabBar.Size = UDim2.new(0, 130, 1, -38)
 TabBar.Position = UDim2.new(0, 0, 0, 38)
@@ -167,7 +154,6 @@ TabPad.PaddingLeft = UDim.new(0, 8)
 TabPad.PaddingRight = UDim.new(0, 8)
 TabPad.Parent = TabBar
 
--- ============ КОНТЕНТ (скроллящийся) ============
 local Content = Instance.new("ScrollingFrame")
 Content.Size = UDim2.new(1, -130, 1, -38)
 Content.Position = UDim2.new(0, 130, 0, 38)
@@ -193,7 +179,6 @@ ContentPad.PaddingRight = UDim.new(0, 12)
 ContentPad.PaddingBottom = UDim.new(0, 12)
 ContentPad.Parent = Content
 
--- ============ ХЕЛПЕРЫ ============
 local function makeTabButton(text, order)
     local btn = Instance.new("TextButton")
     btn.Size = UDim2.new(1, 0, 0, 32)
@@ -431,7 +416,6 @@ local function makeSlider(parent, text, order, minVal, maxVal, default, callback
     end
 end
 
--- ============ ВКЛАДКИ ============
 local Pages = {}
 local TabButtons = {}
 
@@ -463,14 +447,13 @@ end
 local PagePlayer = createPage("Игрок", 1)
 local PageSettings = createPage("Настройка меню", 2)
 
--- ============ ФУНКЦИИ: FLY (по клавишам, поворот за камерой) ============
 local flyConnection = nil
 local flyBodyVelocity = nil
 local flyAlignOrientation = nil
 local flyAttachment = nil
 local FLY_SPEED = 60
 local FLY_VERTICAL = 40
-_G.__FlySpeed = 60  -- текущая скорость (меняется слайдером)
+_G.__FlySpeed = 16
 
 local function stopFly()
     if flyConnection then flyConnection:Disconnect() flyConnection = nil end
@@ -543,6 +526,7 @@ local function startFly()
         local velocity = Vector3.zero
         if move.Magnitude > 0 then
             local fs = _G.__FlySpeed or FLY_SPEED
+            if fs <= 0 then fs = FLY_SPEED end
             velocity = move.Unit * fs
         end
         velocity = velocity + Vector3.new(0, vertical * FLY_VERTICAL, 0)
@@ -556,7 +540,6 @@ local function startFly()
     end)
 end
 
--- ============ ФУНКЦИИ: NOCLIP ============
 local noclipConnection = nil
 local function setNoclip(on)
     if noclipConnection then noclipConnection:Disconnect() noclipConnection = nil end
@@ -572,7 +555,6 @@ local function setNoclip(on)
     end)
 end
 
--- ============ ФУНКЦИИ: FAST INTERACT ============
 local fastInteractConnection = nil
 local function setFastInteract(on)
     if fastInteractConnection then fastInteractConnection:Disconnect() fastInteractConnection = nil end
@@ -595,7 +577,6 @@ local function setFastInteract(on)
     end)
 end
 
--- ============ ФУНКЦИИ: PLAYER ESP ============
 local espFolder = Instance.new("Folder")
 espFolder.Name = "PlayerESP"
 espFolder.Parent = ScreenGui
@@ -689,7 +670,6 @@ Players.PlayerRemoving:Connect(function(p)
     end
 end)
 
--- ============ НАПОЛНЕНИЕ ВКЛАДКИ "ИГРОК" ============
 local flySet = makeToggle(PagePlayer, "Полёт (Fly)", 1, false, function(v)
     if v then startFly() else stopFly() end
 end)
@@ -706,7 +686,6 @@ makeToggle(PagePlayer, "ESP игроков", 4, false, function(v)
     setESP(v)
 end)
 
--- Слайдер скорости (0–150)
 local speedSet = makeSlider(PagePlayer, "Скорость игрока", 5, 0, 150, 16, function(v)
     local char = LocalPlayer.Character
     if char then
@@ -724,7 +703,6 @@ makeButton(PagePlayer, "Сбросить персонажа", 6, function()
     end
 end)
 
--- ============ НАПОЛНЕНИЕ ВКЛАДКИ "НАСТРОЙКА МЕНЮ" ============
 makeToggle(PageSettings, "Показывать островок", 1, true, function(v)
     Island.Visible = v
 end)
@@ -745,7 +723,6 @@ makeButton(PageSettings, "Закрыть меню", 5, function()
     Main.Visible = false
 end)
 
--- ============ ПЕРЕТАСКИВАНИЕ ОКНА ============
 local function makeDraggable(frame, handle)
     local dragging = false
     local dragStart, startPos
@@ -777,7 +754,6 @@ end
 
 makeDraggable(Main, TitleBar)
 
--- ============ ОСТРОВОК: DRAG vs CLICK ============
 local islandDragging = false
 local islandMoved = false
 local islandDragStart, islandStartPos
@@ -806,4 +782,54 @@ UserInputService.InputChanged:Connect(function(input)
     if islandDragging and (input.UserInputType == Enum.UserInputType.MouseMovement
     or input.UserInputType == Enum.UserInputType.Touch) then
         local delta = input.Position - islandDragStart
-        if math.abs(d
+        if math.abs(delta.X) > 5 or math.abs(delta.Y) > 5 then
+            islandMoved = true
+        end
+        if islandMoved then
+            Island.Position = UDim2.new(
+                islandStartPos.X.Scale, islandStartPos.X.Offset + delta.X,
+                islandStartPos.Y.Scale, islandStartPos.Y.Offset + delta.Y
+            )
+        end
+    end
+end)
+
+local resizing = false
+local resizeStart = nil
+local resizeStartSize = nil
+local MIN_W, MIN_H = 380, 240
+local MAX_W, MAX_H = 1000, 700
+
+ResizeHandle.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1
+    or input.UserInputType == Enum.UserInputType.Touch then
+        resizing = true
+        resizeStart = input.Position
+        resizeStartSize = Main.AbsoluteSize
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1
+    or input.UserInputType == Enum.UserInputType.Touch then
+        resizing = false
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if resizing and (input.UserInputType == Enum.UserInputType.MouseMovement
+    or input.UserInputType == Enum.UserInputType.Touch) then
+        local delta = input.Position - resizeStart
+        local newW = math.clamp(resizeStartSize.X + delta.X, MIN_W, MAX_W)
+        local newH = math.clamp(resizeStartSize.Y + delta.Y, MIN_H, MAX_H)
+        Main.Size = UDim2.new(0, newW, 0, newH)
+    end
+end)
+
+Pages["Игрок"].Visible = true
+TabButtons["Игрок"].TextColor3 = COL_ACCENT
+TabButtons["Игрок"].BackgroundColor3 = COL_BG
+
+LocalPlayer.CharacterAdded:Connect(function(char)
+    stopFly()
+    if flySet then flySet(false
