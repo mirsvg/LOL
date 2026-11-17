@@ -2,7 +2,7 @@
     Универсальное меню для Roblox (Solara-совместимое)
     Разделы: Игрок / Настройка меню
     Функции: Fly, Noclip, FastInteract, Player ESP, Godmode, Speed Slider, Jump Slider
-    Колесо мыши: слайдеры + скролл контента
+    Колесо мыши: скролл контента + изменение слайдеров
 ]]
 
 if _G.__MyMenuLoaded and _G.__MyMenu then
@@ -897,7 +897,7 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
--- ============ СКРОЛЛ КОЛЁСИКОМ (контент) ============
+-- ============ СКРОЛЛ КОЛЁСИКОМ МЫШИ ============
 local scrollSpeed = 40
 UserInputService.InputChanged:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseWheel then
