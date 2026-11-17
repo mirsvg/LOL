@@ -1,3 +1,28 @@
+-- ============ ВОССТАНОВЛЕНИЕ ИЗ _G ============
+local Players = _G.Players
+local RunService = _G.RunService
+local UserInputService = _G.UserInputService
+local TweenService = _G.TweenService
+local LocalPlayer = _G.LocalPlayer
+local Camera = _G.Camera
+local COL_BG = _G.COL_BG
+local COL_PANEL = _G.COL_PANEL
+local COL_ACCENT = _G.COL_ACCENT
+local COL_TEXT = _G.COL_TEXT
+local COL_SUB = _G.COL_SUB
+local COL_OFF = _G.COL_OFF
+local COL_ON = _G.COL_ON
+local ScreenGui = _G.ScreenGui
+local Island = _G.Island
+local Main = _G.Main
+local ResizeHandle = _G.ResizeHandle
+local TitleBar = _G.TitleBar
+local Content = _G.Content
+local makeTabButton = _G.makeTabButton
+local makeToggle = _G.makeToggle
+local makeButton = _G.makeButton
+local makeSlider = _G.makeSlider
+
 local Pages = {}
 local TabButtons = {}
 
