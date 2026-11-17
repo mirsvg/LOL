@@ -413,3 +413,28 @@ local function makeSlider(parent, text, order, minVal, maxVal, default, callback
         end
     end
 end
+
+-- ============ ЭКСПОРТ В _G ДЛЯ PART 2 ============
+_G.Players = Players
+_G.RunService = RunService
+_G.UserInputService = UserInputService
+_G.TweenService = TweenService
+_G.LocalPlayer = LocalPlayer
+_G.Camera = Camera
+_G.COL_BG = COL_BG
+_G.COL_PANEL = COL_PANEL
+_G.COL_ACCENT = COL_ACCENT
+_G.COL_TEXT = COL_TEXT
+_G.COL_SUB = COL_SUB
+_G.COL_OFF = COL_OFF
+_G.COL_ON = COL_ON
+_G.ScreenGui = ScreenGui
+_G.Island = Island
+_G.Main = Main
+_G.ResizeHandle = ResizeHandle
+_G.TitleBar = TitleBar
+_G.Content = Content
+_G.makeTabButton = makeTabButton
+_G.makeToggle = makeToggle
+_G.makeButton = makeButton
+_G.makeSlider = makeSlider
