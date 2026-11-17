@@ -1,7 +1,7 @@
 --[[
     Универсальное меню для Roblox (Solara-совместимое)
     Разделы: Игрок / Настройка меню
-    Функции: Fly, Noclip, FastInteract, Player ESP, Speed Slider
+    Функции: Fly, Noclip, FastInteract, Player ESP, Godmode, Speed Slider, Jump Slider
 ]]
 
 if _G.__MyMenuLoaded and _G.__MyMenu then
@@ -447,6 +447,7 @@ end
 local PagePlayer = createPage("Игрок", 1)
 local PageSettings = createPage("Настройка меню", 2)
 
+-- ============ FLY ============
 local flyConnection = nil
 local flyBodyVelocity = nil
 local flyAlignOrientation = nil
@@ -540,6 +541,7 @@ local function startFly()
     end)
 end
 
+-- ============ NOCLIP ============
 local noclipConnection = nil
 local function setNoclip(on)
     if noclipConnection then noclipConnection:Disconnect() noclipConnection = nil end
@@ -555,6 +557,31 @@ local function setNoclip(on)
     end)
 end
 
+-- ============ GODMODE ============
+local godmodeConnection = nil
+local function setGodmode(on)
+    if godmodeConnection then godmodeConnection:Disconnect() godmodeConnection = nil end
+    if not on then
+        local char = LocalPlayer.Character
+        if char then
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            if hum then hum.Health = hum.MaxHealth end
+        end
+        return
+    end
+    godmodeConnection = RunService.Heartbeat:Connect(function()
+        local char = LocalPlayer.Character
+        if not char then return end
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if hum then
+            if hum.Health < hum.MaxHealth then
+                hum.Health = hum.MaxHealth
+            end
+        end
+    end)
+end
+
+-- ============ FAST INTERACT ============
 local fastInteractConnection = nil
 local function setFastInteract(on)
     if fastInteractConnection then fastInteractConnection:Disconnect() fastInteractConnection = nil end
@@ -577,6 +604,7 @@ local function setFastInteract(on)
     end)
 end
 
+-- ============ ESP ============
 local espFolder = Instance.new("Folder")
 espFolder.Name = "PlayerESP"
 espFolder.Parent = ScreenGui
@@ -670,6 +698,7 @@ Players.PlayerRemoving:Connect(function(p)
     end
 end)
 
+-- ============ ВКЛАДКА "ИГРОК" ============
 local flySet = makeToggle(PagePlayer, "Полёт (Fly)", 1, false, function(v)
     if v then startFly() else stopFly() end
 end)
@@ -686,16 +715,35 @@ makeToggle(PagePlayer, "ESP игроков", 4, false, function(v)
     setESP(v)
 end)
 
-local speedSet = makeSlider(PagePlayer, "Скорость игрока", 5, 0, 150, 16, function(v)
+makeToggle(PagePlayer, "Бессмертие (Godmode)", 5, false, function(v)
+    setGodmode(v)
+end)
+
+local speedSet = makeSlider(PagePlayer, "Скорость игрока", 6, 0, 150, 16, function(v)
+    _G.__FlySpeed = v
     local char = LocalPlayer.Character
     if char then
         local hum = char:FindFirstChildOfClass("Humanoid")
         if hum then hum.WalkSpeed = v end
     end
-    _G.__FlySpeed = v
 end)
 
-makeButton(PagePlayer, "Сбросить персонажа", 6, function()
+local jumpSet = makeSlider(PagePlayer, "Сила прыжка", 7, 0, 300, 50, function(v)
+    _G.__JumpPower = v
+    local char = LocalPlayer.Character
+    if char then
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if hum then
+            if hum.UseJumpPower then
+                hum.JumpPower = v
+            else
+                hum.JumpHeight = v * 0.2
+            end
+        end
+    end
+end)
+
+makeButton(PagePlayer, "Сбросить персонажа", 8, function()
     local char = LocalPlayer.Character
     if char then
         local h = char:FindFirstChildOfClass("Humanoid")
@@ -703,6 +751,7 @@ makeButton(PagePlayer, "Сбросить персонажа", 6, function()
     end
 end)
 
+-- ============ ВКЛАДКА "НАСТРОЙКА МЕНЮ" ============
 makeToggle(PageSettings, "Показывать островок", 1, true, function(v)
     Island.Visible = v
 end)
@@ -723,6 +772,7 @@ makeButton(PageSettings, "Закрыть меню", 5, function()
     Main.Visible = false
 end)
 
+-- ============ ПЕРЕТАСКИВАНИЕ ============
 local function makeDraggable(frame, handle)
     local dragging = false
     local dragStart, startPos
@@ -754,6 +804,7 @@ end
 
 makeDraggable(Main, TitleBar)
 
+-- ============ ОСТРОВОК ============
 local islandDragging = false
 local islandMoved = false
 local islandDragStart, islandStartPos
@@ -781,60 +832,4 @@ end)
 UserInputService.InputChanged:Connect(function(input)
     if islandDragging and (input.UserInputType == Enum.UserInputType.MouseMovement
     or input.UserInputType == Enum.UserInputType.Touch) then
-        local delta = input.Position - islandDragStart
-        if math.abs(delta.X) > 5 or math.abs(delta.Y) > 5 then
-            islandMoved = true
-        end
-        if islandMoved then
-            Island.Position = UDim2.new(
-                islandStartPos.X.Scale, islandStartPos.X.Offset + delta.X,
-                islandStartPos.Y.Scale, islandStartPos.Y.Offset + delta.Y
-            )
-        end
-    end
-end)
-
-local resizing = false
-local resizeStart = nil
-local resizeStartSize = nil
-local MIN_W, MIN_H = 380, 240
-local MAX_W, MAX_H = 1000, 700
-
-ResizeHandle.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1
-    or input.UserInputType == Enum.UserInputType.Touch then
-        resizing = true
-        resizeStart = input.Position
-        resizeStartSize = Main.AbsoluteSize
-    end
-end)
-
-UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1
-    or input.UserInputType == Enum.UserInputType.Touch then
-        resizing = false
-    end
-end)
-
-UserInputService.InputChanged:Connect(function(input)
-    if resizing and (input.UserInputType == Enum.UserInputType.MouseMovement
-    or input.UserInputType == Enum.UserInputType.Touch) then
-        local delta = input.Position - resizeStart
-        local newW = math.clamp(resizeStartSize.X + delta.X, MIN_W, MAX_W)
-        local newH = math.clamp(resizeStartSize.Y + delta.Y, MIN_H, MAX_H)
-        Main.Size = UDim2.new(0, newW, 0, newH)
-    end
-end)
-
-Pages["Игрок"].Visible = true
-TabButtons["Игрок"].TextColor3 = COL_ACCENT
-TabButtons["Игрок"].BackgroundColor3 = COL_BG
-
-LocalPlayer.CharacterAdded:Connect(function(char)
-    stopFly()
-    if flySet then flySet(false) end
-    local hum = char:WaitForChild("Humanoid", 5)
-    if hum and _G.__FlySpeed then
-        hum.WalkSpeed = _G.__FlySpeed
-    end
-end)
+        local delta =
