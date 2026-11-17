@@ -832,4 +832,9 @@ TabButtons["Игрок"].BackgroundColor3 = COL_BG
 
 LocalPlayer.CharacterAdded:Connect(function(char)
     stopFly()
-    if flySet then flySet(false
+    if flySet then flySet(false) end
+    local hum = char:WaitForChild("Humanoid", 5)
+    if hum and _G.__FlySpeed then
+        hum.WalkSpeed = _G.__FlySpeed
+    end
+end)
